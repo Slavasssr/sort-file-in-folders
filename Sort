@@ -1,0 +1,90 @@
+import os
+import shutil
+import sys
+
+def get_source_directory():
+    """
+    Запрашивает у пользователя путь к папке с файлами для сортировки
+    """
+    while True:
+        source_dir = input("Введите путь к папке с файлами для сортировки: ").strip()
+        source_dir = os.path.normpath(source_dir)
+        
+        if not os.path.isdir(source_dir):
+            print(f"Ошибка: '{source_dir}' не является папкой или не существует")
+            print("Пожалуйста, введите правильный путь.")
+            continue
+            
+        return source_dir
+
+def get_files_per_folder():
+    """
+    Запрашивает количество файлов в каждой подпапке
+    """
+    while True:
+        try:
+            files_per_folder = int(input("Введите количество файлов в каждой подпапке (по умолчанию 1500): ") or 1500)
+            if files_per_folder <= 0:
+                raise ValueError
+            return files_per_folder
+        except ValueError:
+            print("Ошибка: введите положительное целое число.")
+
+def split_files_into_folders(source_dir, files_per_folder):
+    """
+    Разделяет файлы в исходной папке на подпапки по указанному количеству файлов.
+    """
+    try:
+        # Получаем список всех файлов в исходной папке (исключая папки)
+        all_files = [f for f in os.listdir(source_dir) 
+                    if os.path.isfile(os.path.join(source_dir, f))]
+        
+        if not all_files:
+            print(f"В папке {source_dir} не найдено файлов!")
+            return
+        
+        # Сортируем файлы по имени
+        all_files.sort()
+        
+        total_files = len(all_files)
+        print(f"Всего файлов: {total_files}")
+        
+        # Рассчитываем количество подпапок
+        num_folders = (total_files + files_per_folder - 1) // files_per_folder
+        print(f"Будет создано {num_folders} подпапок по {files_per_folder} файлов в каждой")
+        
+        # Создаем подпапки и перемещаем файлы
+        for folder_num in range(num_folders):
+            folder_name = f"part_{folder_num + 1:03d}"  # Форматирование с ведущими нулями (001, 002...)
+            folder_path = os.path.join(source_dir, folder_name)
+            
+            os.makedirs(folder_path, exist_ok=True)
+            
+            start_idx = folder_num * files_per_folder
+            end_idx = min((folder_num + 1) * files_per_folder, total_files)
+            files_to_move = all_files[start_idx:end_idx]
+            
+            for file_name in files_to_move:
+                src = os.path.join(source_dir, file_name)
+                dst = os.path.join(folder_path, file_name)
+                shutil.move(src, dst)
+            
+            print(f"Создана папка {folder_name} с {len(files_to_move)} файлами")
+
+    except Exception as e:
+        print(f"Произошла ошибка: {str(e)}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    print("=== Сортировка файлов по папкам ===")
+    source_dir = get_source_directory()
+    files_per_folder = get_files_per_folder()
+    
+    print(f"\nНастройки:")
+    print(f"Папка с файлами: {source_dir}")
+    print(f"Файлов в каждой подпапке: {files_per_folder}")
+    print("\nНачинаем обработку...")
+    
+    split_files_into_folders(source_dir, files_per_folder)
+    print("\nГотово! Все файлы успешно распределены.")
+   
